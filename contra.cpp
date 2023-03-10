@@ -1,14 +1,13 @@
 /*PRIMER PARTE DE PROGRAMA MAMALON*/
 
-#include<stdio.h>
-#include<string.h>
-#include<conio.h>
+#include <stdio.h>
+#include <string.h>
+#include <conio.h>
 #include <cstring>
-#include<iostream>
+#include <iostream>
 
-
-const int LONGITUD{20},LIMITE_USUARIOS{50};
-
+const std::int32_t LONGITUD{20}; // Longitud de que??
+const std::int32_t LIMITE_USUARIOS{50};
 
 using std::cin;
 using std::cout;
@@ -17,18 +16,18 @@ void ingresar(char *usuario , char *clave);
 void registrar(struct Usuario *registrar);
 int buscar(char *buscar_usuario, char *buscar_contraseña, struct Usuario *buscar, int *i);
 
-struct Usuario
-{
+struct Usuario {
     char User[LONGITUD];
     char Password[LONGITUD];
 };
 
 int usuarios_registrados{0};
 
-int main(void){
+int main(void)
+{
         const char USER_ADMIN[] ="SOYADMIN", PASSWORD_ADMIN[]="CONTRASENIA";//CONSTRASEÑA ADMIN
         struct Usuario Usuarios[LIMITE_USUARIOS];
-        int Opcion,Desicion,i{0};
+        int Opcion, i{0};
         char usuario[LONGITUD],clave[LONGITUD],decision_regresar;
         bool continuar {true},exito{false};
         
@@ -116,7 +115,7 @@ void ingresar(char *usuario , char *clave)
 {
 
         char leer;
-        int intento{3},ingreso{0},cont{0};
+        int cont{0}; // Eliminamos variables inutilizadas
        
         
             
@@ -128,8 +127,7 @@ void ingresar(char *usuario , char *clave)
             usuario[strlen(usuario) - 1] = '\0';
             fflush(stdin);
             printf("\n\n\t\t\t\t\t*POR FAVOR TECLEE SU CONTRA: ");
-            while(leer=getch())
-            {
+            while ( ( leer = _getch() ) ) { // Usamos _getch().. Más moderna. LA otra está deprecated
                 
                 if(leer==13){
                     clave[cont]='\0';
