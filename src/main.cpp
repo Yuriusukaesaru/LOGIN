@@ -18,20 +18,25 @@ void ingresar(char *usuario , char *clave);
 void registrar(struct Usuario *registrar);
 int buscar(char *buscar_usuario, char *buscar_contraseña, struct Usuario *buscar, int *i);
 
+// Cambio a std::string
 struct Usuario {
-    char User[LONGITUD];
-    char Password[LONGITUD];
+	std::string nombre;
+  std::string password;
 };
 
-int usuarios_registrados{0};
-
 /* VAmos a mejorar las identaciones a tabuladores fijos */
-int main(void)/*{{{*/
+/* En C++, main() es equivalente a main( void ). Limpiemos el código */
+std::int32_t main()/*{{{*/
 {
-	const char USER_ADMIN[] ="SOYADMIN", PASSWORD_ADMIN[]="CONTRASENIA";//CONSTRASEÑA ADMIN
-	struct Usuario Usuarios[LIMITE_USUARIOS];
+	// std::int32_t y se hace local
+	std::int32_t usuarios_registrados{ 0 };
+
+	// Porqué separar user y password de admin si ya tienes un struct? úsalo!!
+	struct Usuario admin { { "SOYADMIN", "CNTRASENIA" } };
+	struct Usuario usuario_leido;
+
 	int Opcion, i{0};
-	char usuario[LONGITUD],clave[LONGITUD],decision_regresar;
+
 	bool continuar {true},exito{false};
 
 	do {
@@ -108,11 +113,12 @@ void ingresar( char *usuario , char *clave )/*{{{*/
 	printf("\n\n\t\t\t\t\t               +|INICIO DE SESION|+ ");
 	printf("\n\n\t\t\t\t\t+-----------------------+----------------------+");
 	printf("\n\n\t\t\t\t\t*BIENVENIDO POR FAVOR INGRESE SU USUARIO: ");
-	fgets(usuario,LONGITUD,stdin);
-	usuario[strlen(usuario) - 1] = '\0';
-	fflush(stdin);
+	fgets( usuario, LONGITUD, stdin);
+	usuario[ strlen( usuario ) - 1 ] = '\0';
+	// fflush(stdin); fgets() se traga todo. no hay necesidad de limpiar el buffer
 
 	printf("\n\n\t\t\t\t\t*POR FAVOR TECLEE SU CONTRA: ");
+	/* Aquí en lugar de romper el ciclo en medio, vamos a mejorar ma condición. */
 	while ( ( leer = _getch() ) ) { // Usamos _getch().. Más moderna. LA otra está deprecated
 		if ( leer == 13 ) {
 			clave[cont]='\0';
