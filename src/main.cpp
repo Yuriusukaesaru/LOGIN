@@ -1,93 +1,86 @@
 /*PRIMER PARTE DE PROGRAMA MAMALON*/
 
-/* En programas C++, conviene usar los wrapers propios de las librerías de C++ (Ej: en lugar de
- * <stdio.h>, incluiremos <cstdio> */
-#include <cstdio>
-#include <cstring>
 #include <iostream>
-#include <conio.h>
+#include <string>
+#include <cstring>
+#include <ncurses.h>
+// #include <conio.h>
 
-/* Usaremos el tipo std::int32_t */
-const std::int32_t LONGITUD{20}; // Longitud de que??
-const std::int32_t LIMITE_USUARIOS{50};
+enum Opcion : const std::int16_t { INGRESAR = 1, REGISTRAR_USUARIO, SALIR };
+enum Tecla : char { BACKSPACE = 8, ENTER = 13 };
 
-using std::cin;
-using std::cout;
-
-void ingresar(char *usuario , char *clave);
-void registrar(struct Usuario *registrar);
-int buscar(char *buscar_usuario, char *buscar_contraseña, struct Usuario *buscar, int *i);
-
-// Cambio a std::string
 struct Usuario {
 	std::string nombre;
-  std::string password;
+	std::string password;
 };
 
-/* VAmos a mejorar las identaciones a tabuladores fijos */
-/* En C++, main() es equivalente a main( void ). Limpiemos el código */
-std::int32_t main()/*{{{*/
+const std::int32_t &MAX_STRING{ 20 };
+const std::int32_t &LIMITE_USUARIOS{ 50 };
+
+auto leer_datos_usuario() -> struct Usuario;
+auto buscar_usuario( const struct Usuario _UsuarioLeido, const struct Usuario *_BaseDatos,
+		const std::int32_t &_Usuarios ) -> bool;
+auto registrar_usuario( struct Usuario *_BaseDatos, std::int32_t *_Usuarios ) -> void;
+
+using std::cout;
+using std::cin;
+
+auto main() -> std::int32_t/*{{{*/
 {
-	// std::int32_t y se hace local
-	std::int32_t usuarios_registrados{ 0 };
+	struct Usuario usuarios_database[ LIMITE_USUARIOS ];
+	const struct Usuario &admin { { "SOYADMIN" }, { "CONTRASENIA" } };
+	struct Usuario usuario_leido{ { "" }, { "" } };
+	std::int32_t n_registrados{ 0 };
 
-	// Porqué separar user y password de admin si ya tienes un struct? úsalo!!
-	struct Usuario admin { { "SOYADMIN", "CNTRASENIA" } };
-	struct Usuario usuario_leido;
+	std::int16_t opcion;
 
-	int Opcion, i{0};
-
-	bool continuar {true},exito{false};
+	[[ maybe_unused ]] bool se_encontro_usuario{ false };
+	char decision_continuar{ '\0' };
+	bool continuar{ true };
 
 	do {
-		cout	<<"\n\n\t\t\t\t\t              |ESTAS SON LAS OPCIONES|"
-				<<"\n\n\t\t\t\t\t               1.- INGRESAR"
-				<<"\n\n\t\t\t\t\t               2.- REGISTRARSE"
-				<<"\n\n\t\t\t\t\t               3.- SALIR"
-				<<"\n\n\t\t\t\t\t               * DIGITE LA OPCION: ";
-		cin >> Opcion;
+		cout	<< "\n\n\t\t\t              |ESTAS SON LAS OPCIONES|"
+				<< "\n\n\t\t\t               1.- INGRESAR"
+				<< "\n\n\t\t\t               2.- REGISTRARSE"
+				<< "\n\n\t\t\t               3.- SALIR"
+				<< "\n\n\t\t\t               * DIGITE LA OPCION: "
+				<< std::endl;
+		cin >> opcion;
 		cin.ignore(); // Es correcto el cin.ignore() en este punto
 
-		i = 0;
-		exito = 0;
+		switch ( opcion ) {
 
-		switch (Opcion) {
-			case 1:
-				// cin.ignore(); Aquí ya no es necesario
-				if ( usuarios_registrados > 0 ) // En enunciados if simples no es a huevo llaves
-					ingresar(usuario,clave);
-                else
-					cout<<"\n\n\t\t\t\t\tNO HAY USUARIOS EN LA BASE DE DATOS";
-
-				while (i <= usuarios_registrados and exito == false) {
-					exito = buscar(usuario,clave, Usuarios + i, &i);
-					++i;
-				}
-
-				cout << "\n\n\t\t\t\t\tQUIERES VOLVER AL MENU?: [S]= SI [N]=NO: ";
-				cin >> decision_regresar;
-
-				break;
-
-			case 2:
-				// cin.ignore(); Un poco de mal gusto un cin.ignore() que no se sabe qué elimina
-				cout << "\n\n\t\t\t\t\tDEBES INICIAR SESION COMO ADMINISTRADOR PARA TENER "
-						"ESTE PRIVILEGIO";
-				ingresar( usuario, clave );
-
-				if ( strcmp( usuario, USER_ADMIN ) == 0 and strcmp(clave,PASSWORD_ADMIN ) == 0 and
-						usuarios_registrados < LIMITE_USUARIOS ) {
-
-					registrar( Usuarios + usuarios_registrados );
-
-					cin.ignore();
+			case Opcion::INGRESAR:
+				if ( n_registrados > 0 ) {
+					usuario_leido = leer_datos_usuario();
+					se_encontro_usuario =
+						buscar_usuario( usuario_leido, usuarios_database, n_registrados );
 				}
 				else
-					cout<<"\n\n\t\t\t\t\tNO SE PUEDE INGRESAR"; 
+					cout << "\n\n\t\t\tNO HAY USUARIOS EN LA BASE DE DATOS";
+
+				cout << "\n\n\t\t\tQUIERES VOLVER AL MENU?: [S]= SI [N]=NO: ";
+				cin >> decision_continuar;
+				cin.ignore();
+				break;
+
+			case Opcion::REGISTRAR_USUARIO:
+				cout << "\n\n\t\t\tDEBES INICIAR SESION COMO ADMINISTRADOR PARA TENER "
+						"ESTE PRIVILEGIO" << std::endl;
+				usuario_leido = leer_datos_usuario();
+
+				if (	usuario_leido.nombre == admin.nombre and
+						usuario_leido.password == admin.password and
+						n_registrados < LIMITE_USUARIOS ) {
+
+					registrar_usuario( usuarios_database, &n_registrados );
+				}
+				else
+					cout<<"\n\n\t\t\tNO SE PUEDE INGRESAR"; 
 
 				cout<<"\n\n\t\t\t\t\tQUIERES VOLVER AL MENU?: [S]= SI [N]=NO: ";
-
-				cin>>decision_regresar;
+				cin >> decision_continuar;
+				cin.ignore();
 				break;
 
 			case 3:
@@ -98,70 +91,85 @@ std::int32_t main()/*{{{*/
 			default:
 				cout << "\n\n\t\t\t\t\tOPCION NO VALIDA d:";
 				cin.ignore();
-				decision_regresar = 's';
 				break;
 		}
-	} while((decision_regresar =='S' or decision_regresar == 's')  and  continuar == true ) ;
+	} while( ( decision_continuar == 'S' or decision_continuar == 's')  and  continuar == true ) ;
 }/*}}}*/
 
-void ingresar( char *usuario , char *clave )/*{{{*/
+auto leer_datos_usuario() -> struct Usuario/*{{{*/
 {
-	char leer;
-	int cont{0}; // Eliminamos variables inutilizadas
+	struct Usuario usuario { { "" }, { "" } };
+	char usuario_nombre_C_style[ MAX_STRING ]{ "" };
 
-	printf("\n\n\t\t\t\t\t+-----------------------+----------------------+");
-	printf("\n\n\t\t\t\t\t               +|INICIO DE SESION|+ ");
-	printf("\n\n\t\t\t\t\t+-----------------------+----------------------+");
-	printf("\n\n\t\t\t\t\t*BIENVENIDO POR FAVOR INGRESE SU USUARIO: ");
-	fgets( usuario, LONGITUD, stdin);
-	usuario[ strlen( usuario ) - 1 ] = '\0';
-	// fflush(stdin); fgets() se traga todo. no hay necesidad de limpiar el buffer
+	std::cout << "\n\n\t\t\t+-----------------------+----------------------+";
+	std::cout << "\n\n\t\t\t               +|INICIO DE SESION|+ ";
+	std::cout << "\n\n\t\t\t+-----------------------+----------------------+";
 
-	printf("\n\n\t\t\t\t\t*POR FAVOR TECLEE SU CONTRA: ");
-	/* Aquí en lugar de romper el ciclo en medio, vamos a mejorar ma condición. */
-	while ( ( leer = _getch() ) ) { // Usamos _getch().. Más moderna. LA otra está deprecated
-		if ( leer == 13 ) {
-			clave[cont]='\0';
-		break;
+	std::cout << "\n\n\t\t\t*BIENVENIDO POR FAVOR INGRESE SU USUARIO: ";
+	fgets( usuario_nombre_C_style, MAX_STRING, stdin );
+	usuario_nombre_C_style[ strlen( usuario_nombre_C_style ) - 1 ] = '\0';
+	usuario.nombre = usuario_nombre_C_style;
 
-		} else if ( leer == 8 && cont > 0 ) {
-			cont--;
-			printf("\b \b");   
-			
-		} else if (cont < LONGITUD ) {
-			printf("*");
-			clave[cont]=leer;
-			cont++;
+	// Vamos a hacer un borrado de buffer porque hay un error y ya no está imprimiendo esto
+	std::cout << "\n\n\t\t\t*POR FAVOR TECLEE SU CONTRA: " << std::flush;
+	char caracter_leido;
+	[[ maybe_unused ]] std::string::size_type n_caracteres{ 0 };
+	[[ maybe_unused ]] bool continuar{ true };
+
+	while ( continuar ) {
+		/* En un sistema Linux, getch() depende de ejecutar initscr(). Como no lo estamos haciendo,
+		 * getch() devuelve contínuamente '\377' si no oprimimos una tecla a la velocidad de la luz
+		 * y hace que valga verga todo. Con este while nos aseguramos de que siga leyendo hasta
+		 * oprimir una tecla. A <conio.h> no le va a incomodar esta validación */
+		caracter_leido = getch();
+		if ( caracter_leido == Tecla::ENTER ) {
+			usuario.password[ n_caracteres ] = '\0';
+			continuar = false;
 		}
-	}
-}/*}}}*/
-
-int buscar(char *buscar_usuario, char *buscar_contraseña, struct Usuario *buscar, int *i)/*{{{*/
-{
-	bool busqueda_exitosa {false};
-
-	if( strcmp( buscar_usuario, buscar->User ) == 0 ) {
-		if (strcmp(buscar_contraseña,buscar->Password) == 0) {
-			cout<<"\n\n\t\t\t\t\tBIENVENIDO USUARIO: "<<buscar->User <<"\t\tNUMERO DE USUARIO: "<<*i + 1;
-			busqueda_exitosa = true;
+	/*
+		else if ( caracter_leido == Tecla::BACKSPACE && n_caracteres > 0 ) {
+			--n_caracteres;
+			std::cout << "\b \b";
+		} else if ( n_caracteres < MAX_STRING ) {
+			std::cout << '*';
+			usuario.password[ n_caracteres ] = caracter_leido;
+			++n_caracteres;
 		}
-		else
-			cout<<"\n\n\t\t\t\t\tCONTRASEÑA INCORRECTA :(";
+		*/
 	}
 
-	return busqueda_exitosa;
+	return usuario;
 }/*}}}*/
 
-void registrar(struct Usuario *registrar )/*{{{*/
+auto buscar_usuario( const struct Usuario _UsuarioLeido, const struct Usuario *_BaseDatos,/*{{{*/
+		const std::int32_t &_UsuariosRegistrados ) -> bool
 {
-	//aritmetica de punteros
-	cout	<< "\n\n\t\t\t\t\tREGISTRANDO AL USUARIO NUMERO: "<<usuarios_registrados+ 1
-			<< "\n\n\t\t\t\t\tPOR FAVOR INGRESE SU NOMBRE DE USUARIO: ";
-	cin.getline( registrar->User , LONGITUD);
+	int32_t i{ 0 };
+
+	// Aquí vamos a implementar el algoritmo de búsqueda, no afuera
+	while ( _UsuarioLeido.nombre != ( _BaseDatos + i )->nombre and
+			_UsuarioLeido.password != ( _BaseDatos + i )->password and
+			i < _UsuariosRegistrados )
+		++i;
+
+	/* Aquí metemos dos return al estilo Sertch. En estos casos es bien visto "según yo"
+	 * porque hay cierto paralelismo (hasta estético) entre ambos returns, no se ve "truncado" */
+	if ( i < _UsuariosRegistrados ) // Salió antes -> SÍ LO ENCONTRÓ
+		return true;
+	else
+		return false;
+}/*}}}*/
+
+auto registrar_usuario( struct Usuario *_BaseDatos, std::int32_t *_Usuarios ) -> void/*{{{*/
+{
+	cout	<< "\n\n\t\t\tREGISTRANDO AL USUARIO NUMERO: " << *_Usuarios + 1
+			<< "\n\n\t\t\tPOR FAVOR INGRESE SU NOMBRE DE USUARIO: ";
+	cin >> ( _BaseDatos + *_Usuarios )->nombre;
 	cin.ignore();
-	cout << "\n\n\t\t\t\t\tINGRESE SU CONTRASEÑA: ";
-	cin.getline( registrar -> Password  , LONGITUD);
+
+	cout << "\n\n\t\t\tINGRESE SU CONTRASEÑA: ";
+	cin >> ( _BaseDatos + *_Usuarios )->password;
 	cin.ignore();
 	
-	++usuarios_registrados;
-}/*}}}*/
+	++( *_Usuarios );
+}/*}}}*//*}}}*/
