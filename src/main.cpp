@@ -3,8 +3,8 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-#include <ncurses.h>
-// #include <conio.h>
+// #include <ncurses.h>
+#include <conio.h>
 
 enum Opcion : const std::int16_t { INGRESAR = 1, REGISTRAR_USUARIO, SALIR };
 enum Tecla : char { BACKSPACE = 8, ENTER = 13 };
@@ -113,20 +113,15 @@ auto leer_datos_usuario() -> struct Usuario/*{{{*/
 	// Vamos a hacer un borrado de buffer porque hay un error y ya no está imprimiendo esto
 	std::cout << "\n\n\t\t\t*POR FAVOR TECLEE SU CONTRA: " << std::flush;
 	char caracter_leido;
-	[[ maybe_unused ]] std::string::size_type n_caracteres{ 0 };
-	[[ maybe_unused ]] bool continuar{ true };
+	std::string::size_type n_caracteres{ 0 };
+	bool continuar{ true };
 
 	while ( continuar ) {
-		/* En un sistema Linux, getch() depende de ejecutar initscr(). Como no lo estamos haciendo,
-		 * getch() devuelve contínuamente '\377' si no oprimimos una tecla a la velocidad de la luz
-		 * y hace que valga verga todo. Con este while nos aseguramos de que siga leyendo hasta
-		 * oprimir una tecla. A <conio.h> no le va a incomodar esta validación */
 		caracter_leido = getch();
 		if ( caracter_leido == Tecla::ENTER ) {
 			usuario.password[ n_caracteres ] = '\0';
 			continuar = false;
 		}
-	/*
 		else if ( caracter_leido == Tecla::BACKSPACE && n_caracteres > 0 ) {
 			--n_caracteres;
 			std::cout << "\b \b";
@@ -135,7 +130,6 @@ auto leer_datos_usuario() -> struct Usuario/*{{{*/
 			usuario.password[ n_caracteres ] = caracter_leido;
 			++n_caracteres;
 		}
-		*/
 	}
 
 	return usuario;
