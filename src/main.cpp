@@ -3,20 +3,57 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-#include <ncurses.h>
-// #include <conio.h>
+#include <conio.h>
 
-enum Opcion : const std::int16_t { INGRESAR = 1, REGISTRAR_USUARIO, SALIR };
-enum Tecla : char { BACKSPACE = 8, ENTER = 13 };
+/* Una enumeración es básicamente un conjunto de MACROS que representarán una SECUENCIA DE NÚMEROS.
+ * Supongamos que tenemos el arreglo
+ *
+ *		struct Usuario guapo[ 4 ];
+ *
+ * Pudiéramos referirnos a ellos como 
+ *
+ * 		guapo[ 2 ];
+ *
+ * 	... por ejemplo, pero esto resulta visiblemente poco explícito. Algunas veces le vamos a dar un tratamiento
+ * 	especial a cada uno y nos gustaría que se viera a simple vista de quién se trata. En lugar de referirnos
+ * 	a ellos como 0, 1, 2, 3... creamos una enumeración que va a representrar también un número pero como si fueran
+ * 	macros
+ *
+ * 		enum Nombre{ YURI, SERTCH, TOCAYO, JUANCA };
+ *
+ * En automático, YURI tendrá el valor de 0, SERTCH de 1 y así sucesivamente. Siempre en orden ascendente. Puedes
+ * especificar algún valor en concreto y el siguiente elemento adoptará ese valor + 1. Opcionalmente puedes especificar
+ * con
+ *
+ * 		: <tipo_de_entero>
+ *
+ * el tipo de entero que quieres que tenga tu enumeración */
+enum Opcion : const std::int16_t { INGRESAR = 1, REGISTRAR_USUARIO, SALIR }; // Para las opciones
+enum Tecla : char { BACKSPACE = 8, ENTER = 13 }; // Para las teclas (valor ASCII)
 
 struct Usuario {
 	std::string nombre;
 	std::string password;
 };
 
+/* Aquí usamos una "referencia a una constante" (referencia a un valor temporal constante) para optimizar memoria */
 const std::int32_t &MAX_STRING{ 20 };
 const std::int32_t &LIMITE_USUARIOS{ 50 };
 
+/* El tipo de datos -auto- hace que el compilador "decida" el tipo de dato que tendrá tu variable en relación
+ * al valor o tipo de retorno que le estás asignando.
+ *
+ * En este caso lo usamos para adoptar la nomenclatura de encabezado de función moderna usando el operador flecha.
+ *
+ * 		std::int32_t funcion();
+ *
+ * se puede escribir como
+ *
+ * 		auto funcion() -> std::int32_t;
+ *
+ * Al decirle el tipo de retorno de esta forma, el tipo -auto- de alguna manera
+ * pierde funcionalidad, pero nos permite expresar los encabezados en este formato màs moderno, usado ademàs
+ * por servidores de lenguaje y otros lenguajes como ObjectiveC. Ùsalo si te acomoda y te gusta */
 auto leer_datos_usuario() -> struct Usuario;
 auto buscar_usuario( const struct Usuario _UsuarioLeido, const struct Usuario *_BaseDatos,
 		const std::int32_t &_Usuarios ) -> bool;
@@ -34,6 +71,9 @@ auto main() -> std::int32_t/*{{{*/
 
 	std::int16_t opcion;
 
+	/* Los atributos son algo del C++ moderno, en este caso el atributo -maybe_unused- nos permite especificarle al
+	 * compilador que cierta variable "tal vez no la usemos, pero somos conscientes de ello". Recuerda que cuando
+	 * activamos los flags estrictos, hasta eso la hace de pedo. Con esto, nos deja de lanzar advertencia */
 	[[ maybe_unused ]] bool se_encontro_usuario{ false };
 	char decision_continuar{ '\0' };
 	bool continuar{ true };
@@ -99,34 +139,25 @@ auto main() -> std::int32_t/*{{{*/
 auto leer_datos_usuario() -> struct Usuario/*{{{*/
 {
 	struct Usuario usuario { { "" }, { "" } };
-	char usuario_nombre_C_style[ MAX_STRING ]{ "" };
 
 	std::cout << "\n\n\t\t\t+-----------------------+----------------------+";
 	std::cout << "\n\n\t\t\t               +|INICIO DE SESION|+ ";
 	std::cout << "\n\n\t\t\t+-----------------------+----------------------+";
 
 	std::cout << "\n\n\t\t\t*BIENVENIDO POR FAVOR INGRESE SU USUARIO: ";
-	fgets( usuario_nombre_C_style, MAX_STRING, stdin );
-	usuario_nombre_C_style[ strlen( usuario_nombre_C_style ) - 1 ] = '\0';
-	usuario.nombre = usuario_nombre_C_style;
+	std::cin >> usuario.nombre;
 
-	// Vamos a hacer un borrado de buffer porque hay un error y ya no está imprimiendo esto
 	std::cout << "\n\n\t\t\t*POR FAVOR TECLEE SU CONTRA: " << std::flush;
 	char caracter_leido;
 	[[ maybe_unused ]] std::string::size_type n_caracteres{ 0 };
 	[[ maybe_unused ]] bool continuar{ true };
 
 	while ( continuar ) {
-		/* En un sistema Linux, getch() depende de ejecutar initscr(). Como no lo estamos haciendo,
-		 * getch() devuelve contínuamente '\377' si no oprimimos una tecla a la velocidad de la luz
-		 * y hace que valga verga todo. Con este while nos aseguramos de que siga leyendo hasta
-		 * oprimir una tecla. A <conio.h> no le va a incomodar esta validación */
-		caracter_leido = getch();
+		caracter_leido = static_cast<char>( _getch() );
 		if ( caracter_leido == Tecla::ENTER ) {
 			usuario.password[ n_caracteres ] = '\0';
 			continuar = false;
 		}
-	/*
 		else if ( caracter_leido == Tecla::BACKSPACE && n_caracteres > 0 ) {
 			--n_caracteres;
 			std::cout << "\b \b";
@@ -135,7 +166,6 @@ auto leer_datos_usuario() -> struct Usuario/*{{{*/
 			usuario.password[ n_caracteres ] = caracter_leido;
 			++n_caracteres;
 		}
-		*/
 	}
 
 	return usuario;
