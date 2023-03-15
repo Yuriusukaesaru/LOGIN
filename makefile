@@ -14,19 +14,21 @@
 
 # SUGERENCIA 3: Usaremos el flag -g para que agrege lo necesario para depuración
 
-# OBSERVACIÓN 1: -Wextra no existe en Windows
-
-# OBSERVACIÓN ": Powershell no me acepta el flag -p para crear un archivo si no existe.
+# OBSERVACIÓN 1: Powershell no me acepta el flag -p para crear un archivo si no existe.
 # Omitiremos esa línea. Debemos crear bin/ manualmente por ahora hasta encontrar una solución.
 # Se te queda de tarea
 
-msvc: src/main.cpp
-	cl.exe src/main.cpp /std:c++20 /Z7 /W4 /WX /Febin/login.exe
+# target msvc: Es una locura, jaja, no le entiendo, me marca error y no sè porquè. Compilarè en Windows
+# con Clang
+# msvc: src/main.cpp
+	# cl.exe src/main.cpp /std:c++20 /Z7 /W4 /Febin/login.exe
+
+clang: src/main.cpp
+	clang++ src/main.cpp -g -std=c++20 -Wall -Wextra -Wpedantic -Werror -o bin/login.exe
 
 minGW: src/main.cpp
-	mkdir -p bin
-	g++ src/main.cpp -g -std=c++20 -lncurses -Wall -Wextra -Wpedantic -Werror -o bin/login.exe
+	g++ src/main.cpp -g -std=c++20 -Wall -Wextra -Wpedantic -Werror -o bin/login.exe
 
 .PHONY: clean
 clean:
-	rm bin/*
+	rm bin/* main.obj

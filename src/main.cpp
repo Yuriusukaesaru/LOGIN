@@ -30,6 +30,7 @@
  * el tipo de entero que quieres que tenga tu enumeración */
 enum Opcion : const std::int16_t { INGRESAR = 1, REGISTRAR_USUARIO, SALIR }; // Para las opciones
 enum Tecla : char { BACKSPACE = 8, ENTER = 13 }; // Para las teclas (valor ASCII)
+enum ResultadoDeBusqueda : const std::int16_t{ USUARIO_NO_ENCONTRADO, PASSWORD_INCORRECTO, PASSWORD_CORRECTO };
 
 struct Usuario {
 	std::string nombre;
@@ -55,8 +56,8 @@ const std::int32_t &LIMITE_USUARIOS{ 50 };
  * pierde funcionalidad, pero nos permite expresar los encabezados en este formato màs moderno, usado ademàs
  * por servidores de lenguaje y otros lenguajes como ObjectiveC. Ùsalo si te acomoda y te gusta */
 auto leer_datos_usuario() -> struct Usuario;
-auto buscar_usuario( const struct Usuario _UsuarioLeido, const struct Usuario *_BaseDatos,
-		const std::int32_t &_Usuarios ) -> bool;
+auto buscar_usuario( const struct Usuario &_UsuarioLeido, const struct Usuario *_DataBase,
+		const std::int32_t &_Usuarios ) -> enum ResultadoDeBusqueda;
 auto registrar_usuario( struct Usuario *_BaseDatos, std::int32_t *_Usuarios ) -> void;
 
 using std::cout;
@@ -74,7 +75,7 @@ auto main() -> std::int32_t/*{{{*/
 	/* Los atributos son algo del C++ moderno, en este caso el atributo -maybe_unused- nos permite especificarle al
 	 * compilador que cierta variable "tal vez no la usemos, pero somos conscientes de ello". Recuerda que cuando
 	 * activamos los flags estrictos, hasta eso la hace de pedo. Con esto, nos deja de lanzar advertencia */
-	[[ maybe_unused ]] bool se_encontro_usuario{ false };
+	[[ maybe_unused ]] enum ResultadoDeBusqueda resultado_de_busqueda;
 	char decision_continuar{ '\0' };
 	bool continuar{ true };
 
@@ -83,21 +84,33 @@ auto main() -> std::int32_t/*{{{*/
 				<< "\n\n\t\t\t               1.- INGRESAR"
 				<< "\n\n\t\t\t               2.- REGISTRARSE"
 				<< "\n\n\t\t\t               3.- SALIR"
-				<< "\n\n\t\t\t               * DIGITE LA OPCION: "
-				<< std::endl;
-		cin >> opcion;
-		cin.ignore(); // Es correcto el cin.ignore() en este punto
+				<< "\n\n\t\t\t               * DIGITE LA OPCION: ";
+		std::cin >> opcion;
+		/* Vaciado de buffer moderno */
+		std::cin.ignore();
 
 		switch ( opcion ) {
 
 			case Opcion::INGRESAR:
 				if ( n_registrados > 0 ) {
 					usuario_leido = leer_datos_usuario();
-					se_encontro_usuario =
-						buscar_usuario( usuario_leido, usuarios_database, n_registrados );
+					resultado_de_busqueda = buscar_usuario( usuario_leido, usuarios_database, n_registrados );
+					
+					switch ( resultado_de_busqueda ) {
+						case USUARIO_NO_ENCONTRADO:
+							std::cout << "No mames, ni estas registrado perro" << std::endl;
+							break;
+						case PASSWORD_INCORRECTO:
+							std::cout << "No mames, mete tu password bien qlero" << std::endl;
+							break;
+						case PASSWORD_CORRECTO:
+							std::cout << "Buen ingreso perro" << std::endl;
+							break;
+					}
 				}
 				else
 					cout << "\n\n\t\t\tNO HAY USUARIOS EN LA BASE DE DATOS";
+
 
 				cout << "\n\n\t\t\tQUIERES VOLVER AL MENU?: [S]= SI [N]=NO: ";
 				cin >> decision_continuar;
@@ -108,6 +121,7 @@ auto main() -> std::int32_t/*{{{*/
 				cout << "\n\n\t\t\tDEBES INICIAR SESION COMO ADMINISTRADOR PARA TENER "
 						"ESTE PRIVILEGIO" << std::endl;
 				usuario_leido = leer_datos_usuario();
+				std::cout << usuario_leido.nombre << " - " << usuario_leido.password << std::endl;
 
 				if (	usuario_leido.nombre == admin.nombre and
 						usuario_leido.password == admin.password and
@@ -149,45 +163,44 @@ auto leer_datos_usuario() -> struct Usuario/*{{{*/
 
 	std::cout << "\n\n\t\t\t*POR FAVOR TECLEE SU CONTRA: " << std::flush;
 	char caracter_leido;
-	[[ maybe_unused ]] std::string::size_type n_caracteres{ 0 };
 	[[ maybe_unused ]] bool continuar{ true };
 
 	while ( continuar ) {
 		caracter_leido = static_cast<char>( _getch() );
 		if ( caracter_leido == Tecla::ENTER ) {
-			usuario.password[ n_caracteres ] = '\0';
 			continuar = false;
 		}
-		else if ( caracter_leido == Tecla::BACKSPACE && n_caracteres > 0 ) {
-			--n_caracteres;
+		else if ( caracter_leido == Tecla::BACKSPACE && usuario.password != "" ) {
+			usuario.password.pop_back();
 			std::cout << "\b \b";
-		} else if ( n_caracteres < MAX_STRING ) {
+		} else if ( usuario.password.length() < MAX_STRING ) {
 			std::cout << '*';
-			usuario.password[ n_caracteres ] = caracter_leido;
-			++n_caracteres;
+			usuario.password += caracter_leido;
 		}
 	}
 
 	return usuario;
 }/*}}}*/
 
-auto buscar_usuario( const struct Usuario _UsuarioLeido, const struct Usuario *_BaseDatos,/*{{{*/
-		const std::int32_t &_UsuariosRegistrados ) -> bool
+auto buscar_usuario( const struct Usuario &_UsuarioLeido, const struct Usuario *_BaseDatos,
+		const std::int32_t &_UsuariosRegistrados ) -> enum ResultadoDeBusqueda
 {
 	int32_t i{ 0 };
 
 	// Aquí vamos a implementar el algoritmo de búsqueda, no afuera
-	while ( _UsuarioLeido.nombre != ( _BaseDatos + i )->nombre and
-			_UsuarioLeido.password != ( _BaseDatos + i )->password and
-			i < _UsuariosRegistrados )
+	while ( _UsuarioLeido.nombre != ( _BaseDatos + i )->nombre and i < _UsuariosRegistrados )
 		++i;
 
 	/* Aquí metemos dos return al estilo Sertch. En estos casos es bien visto "según yo"
 	 * porque hay cierto paralelismo (hasta estético) entre ambos returns, no se ve "truncado" */
-	if ( i < _UsuariosRegistrados ) // Salió antes -> SÍ LO ENCONTRÓ
-		return true;
+	if ( i < _UsuariosRegistrados ) {
+		if ( _UsuarioLeido.password == _BaseDatos->password ) // Salió antes -> SÍ LO ENCONTRÓ
+			return PASSWORD_CORRECTO;
+		else
+			return PASSWORD_INCORRECTO;
+	}
 	else
-		return false;
+		return USUARIO_NO_ENCONTRADO;
 }/*}}}*/
 
 auto registrar_usuario( struct Usuario *_BaseDatos, std::int32_t *_Usuarios ) -> void/*{{{*/
